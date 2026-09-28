@@ -1,0 +1,351 @@
+// This Pine Script® code is subject to the terms of the Mozilla Public License 2.0 at https://mozilla.org/MPL/2.0/
+// © Gradation0
+
+//@version=6
+indicator(title = "Final Plan", shorttitle = "FP", overlay = true, precision = 5, format = format.price)
+
+//EMA 1
+EMA1Length = input.int(defval = 3, title = "EMA1", group = "EMA Length")
+ColorForBBM1 = input.color(defval = color.rgb(16, 71, 255), title = "EMA 1", group = "BBEMA Color Control")
+middle1 = ta.ema(close, EMA1Length)
+plot(middle1, color = ColorForBBM1, title = "EMA 1 Line", linewidth = 2)
+BBM1Price = middle1 
+
+//EMA 2
+EMA2Length = input.int(defval = 5, title = "EMA2", group = "EMA Length")
+ColorForBBM2 = input.color(defval = color.rgb(139, 60, 6), title = "EMA 2", group = "BBEMA Color Control")
+middle2 = ta.ema(close, EMA2Length)
+plot(middle2, color = ColorForBBM2, title = "EMA 2 Line", linewidth = 2)
+BBM2Price = middle2 
+
+//EMA 3
+EMA3Length = input.int(defval = 7, title = "EMA3", group = "EMA Length")
+ColorForBBM3 = input.color(defval = color.rgb(97, 97, 97), title = "EMA 3", group = "BBEMA Color Control")
+middle3 = ta.ema(close, EMA3Length)
+plot(middle3, color = ColorForBBM3, title = "EMA 3 Line", linewidth = 2)
+BBM3Price = middle3
+
+//EMA 4
+EMA4Length = input.int(defval = 9, title = "EMA4", group = "EMA Length")
+ColorForBBM4 = input.color(defval = color.rgb(243, 144, 13), title = "EMA 4", group = "BBEMA Color Control")
+middle4 = ta.ema(close, EMA4Length)
+plot(middle4, color = ColorForBBM4, title = "EMA 4 Line", linewidth = 2)
+BBM4Price = middle4
+
+//EMA 5
+EMA5Length = input.int(defval = 20, title = "EMA5", group = "EMA Length")
+ColorForBBM5 = input.color(defval = color.rgb(31, 151, 15), title = "EMA 5", group = "BBEMA Color Control")
+middle5 = ta.ema(close, EMA5Length)
+plot(middle5, color = ColorForBBM5, title = "EMA 5 Line", linewidth = 2)
+BBM5Price = middle5
+
+//EMA 6
+EMA6Length = input.int(defval = 30, title = "EMA6", group = "EMA Length")
+ColorForBBM6 = input.color(defval = color.red, title = "EMA 6", group = "BBEMA Color Control")
+middle6 = ta.ema(close, EMA6Length)
+plot(middle6, color = ColorForBBM6, title = "EMA 6 Line", linewidth = 2)
+BBM6Price = middle6
+
+//이치모쿠
+conversionPeriods = input.int(7, minval=1, title="Conversion Line Length", group = "Ichimoku")
+basePeriods = input.int(26, minval=1, title="Base Line Length", group = "Ichimoku")
+laggingSpan2Periods = input.int(52, minval=1, title="Leading Span B Length", group = "Ichimoku")
+displacement = input.int(26, minval=1, title="Lagging Span", group = "Ichimoku")
+donchian(len) => math.avg(ta.lowest(len), ta.highest(len))
+conversionLine = donchian(conversionPeriods)
+baseLine = donchian(basePeriods)
+leadLine1 = math.avg(conversionLine, baseLine)
+leadLine2 = donchian(laggingSpan2Periods)
+plot(conversionLine, color=color.rgb(69, 214, 250), title="Conversion Line", linewidth = 3)
+plot(baseLine, color=#B71C1C, title="Base Line")
+plot(close, offset = -displacement + 1, color=color.rgb(173, 19, 166), title="Lagging Span")
+p1 = plot(leadLine1, offset = displacement - 1, color=#A5D6A7,
+	 title="Leading Span A")
+p2 = plot(leadLine2, offset = displacement - 1, color=#EF9A9A,
+	 title="Leading Span B")
+plot(leadLine1 > leadLine2 ? leadLine1 : leadLine2, offset = displacement - 1, title = "Kumo Cloud Upper Line", display = display.none) 
+plot(leadLine1 < leadLine2 ? leadLine1 : leadLine2, offset = displacement - 1, title = "Kumo Cloud Lower Line", display = display.none) 
+fill(p1, p2, color = leadLine1 > leadLine2 ? color.rgb(67, 160, 72, 51) : color.rgb(244, 67, 54, 49))
+
+// Price Channel
+PClength = input(9, group = "PC")
+offsetlength = input(0, group = "PC")
+highprice = ta.highest(high, PClength)
+lowprice = ta.lowest(low, PClength)
+centerline = (ta.highest(high, PClength) +  ta.lowest(low, PClength)) / 2
+plot(highprice, color=color.black, title="Highprice Line", offset=offsetlength, linewidth = 4)
+plot(lowprice, color=color.black, title="Lowprice Line", offset=offsetlength, linewidth = 4)
+
+//Hull Suite
+src = close
+string modeSwitch = "Hma"
+int length = 55
+float lengthMult = 1.0
+bool useHtf =false
+htf = input.timeframe("240", title="Higher timeframe", group = "Hull Suite")
+switchColor = true
+candleCol = false
+visualSwitch = input.bool(true, title="Show as a Band?", group = "Hull Suite")
+thicknessSwitch = input.int(1, title="Line Thickness", group = "Hull Suite")
+transpSwitch = input.int(40, title="Band Transparency", step=5, group = "Hull Suite")
+hullMovingAverage(_src, _length) => ta.wma(2 * ta.wma(_src, _length / 2) - ta.wma(_src, _length), math.round(math.sqrt(_length)))
+expHullMovingAverage(_src, _length) => ta.ema(2 * ta.ema(_src, _length / 2) - ta.ema(_src, _length), math.round(math.sqrt(_length)))
+triHullMovingAverage(_src, _length) => ta.wma(ta.wma(_src, _length / 3) * 3 - ta.wma(_src, _length / 2) - ta.wma(_src, _length), _length)
+modeSelection(mode, _src, _len) =>
+    if mode == "Hma"
+        hullMovingAverage(_src, _len)
+    else if mode == "Ehma"
+        expHullMovingAverage(_src, _len)
+    else if mode == "Thma"
+        triHullMovingAverage(_src, _len / 2)
+    else
+        na
+
+_hull = modeSelection(modeSwitch, src, int(length * lengthMult))
+HULL = useHtf ? request.security(syminfo.tickerid, htf, _hull) : _hull
+MHULL = HULL[0]
+SHULL = HULL[2]
+hullColor = switchColor ? (HULL > HULL[2] ? color.green : color.red) : color.orange
+Fi1 = plot(MHULL, title="MHULL", color=hullColor, linewidth=thicknessSwitch)
+Fi2 = plot(visualSwitch ? SHULL : na, title="SHULL", color=hullColor, linewidth=thicknessSwitch)
+alertcondition(ta.crossover(MHULL, SHULL), title="Hull trending up.", message="Hull trending up.")
+alertcondition(ta.crossover(SHULL, MHULL), title="Hull trending down.", message="Hull trending down.")
+fill(Fi1, Fi2, title="Band Filler", color=hullColor)
+barcolor(color = candleCol ? (switchColor ? hullColor : na) : na)
+
+// MACD
+fast_length = input(title = "Fast Length", defval = 12, group = "MACD")
+slow_length = input(title = "Slow Length", defval = 26, group = "MACD")
+src1 = input(title = "Source", defval = close, group = "MACD")
+signal_length = input.int(title = "Signal Smoothing",  minval = 1, maxval = 50, defval = 9, display = display.data_window, group = "MACD")
+sma_source = input.string(title = "Oscillator MA Type",  defval = "EMA", options = ["SMA", "EMA"], display = display.data_window, group = "MACD")
+sma_signal = input.string(title = "Signal Line MA Type", defval = "EMA", options = ["SMA", "EMA"], display = display.data_window, group = "MACD")
+fast_ma = sma_source == "SMA" ? ta.sma(src1, fast_length) : ta.ema(src1, fast_length)
+slow_ma = sma_source == "SMA" ? ta.sma(src1, slow_length) : ta.ema(src1, slow_length)
+macd = fast_ma - slow_ma
+signal = sma_signal == "SMA" ? ta.sma(macd, signal_length) : ta.ema(macd, signal_length)
+hist = macd - signal
+alertcondition(hist[1] >= 0 and hist < 0, title = 'Rising to falling', message = 'The MACD histogram switched from a rising to falling state')
+alertcondition(hist[1] <= 0 and hist > 0, title = 'Falling to rising', message = 'The MACD histogram switched from a falling to rising state')
+
+//Stoch
+a = input.int(10, "Percent K Length", minval=1, group = "Stoch")
+b = input.int(3, "Percent D Length", minval=1, group = "Stoch")
+c = input.int(10, "EMA Signal Length", minval=1, group = "Stoch")
+smooth_period = input.int(5, "Smoothing Period", minval=1, group = "Stoch")
+ob = input.float(60, "Overbought", minval=-100, maxval=100, group = "Stoch")
+os = input.float(-60, "Oversold", minval=-100, maxval=100, group = "Stoch")
+ll = ta.lowest(low, a)
+hh = ta.highest(high, a)
+diff = hh - ll
+rdiff = close - (hh+ll)/2
+avgrel = ta.ema(rdiff, b)
+avgdiff = ta.ema(diff, b)
+SMI = avgdiff != 0 ? (avgrel/(avgdiff/2)*100) : 0.0
+SMI_smoothed = ta.sma(SMI, smooth_period)
+SMIsignal = ta.ema(SMI_smoothed, b)
+emasignal = ta.ema(SMI_smoothed, c)
+
+// RSI
+rsi1Length = input.int(defval = 7, title = "RSI 1 Line", group = "RSI")
+rsi2Length = input.int(defval = 9, title = "RSI 2 Line", group = "RSI")
+rsi3Length = input.int(defval = 12, title = "RSI 3 Line", group = "RSI")
+RSI1 = ta.rsi(close, rsi1Length)
+RSI2 = ta.rsi(close, rsi2Length)
+RSI3 = ta.rsi(close, rsi3Length)
+
+
+//이평선 크로스
+//long
+var bool BBM1CrossUp = false //3
+var bool BBM2CrossUp = false //5
+var bool BBM3CrossUp = false //7
+var bool BBM4CrossUp = false //9
+if BBM1Price[1] < BBM5Price[1] and BBM1Price[0] > BBM5Price[0] and timeframe.period == "3"
+    BBM1CrossUp := true
+    BBM2CrossUp := false
+    BBM3CrossUp := false
+    BBM4CrossUp := false
+
+else if BBM2Price[1] < BBM5Price[1] and BBM2Price[0] > BBM5Price[0] and timeframe.period == "3"
+    BBM1CrossUp := false
+    BBM2CrossUp := true
+    BBM3CrossUp := false
+    BBM4CrossUp := false
+
+else if BBM3Price[1] < BBM5Price[1] and BBM3Price[0] > BBM5Price[0] and timeframe.period == "3"
+    BBM1CrossUp := false
+    BBM2CrossUp := false
+    BBM3CrossUp := true
+    BBM4CrossUp := false
+
+else if BBM4Price[1] < BBM5Price[1] and BBM4Price[0] > BBM5Price[0] and timeframe.period == "3"
+    BBM1CrossUp := false
+    BBM2CrossUp := false
+    BBM3CrossUp := false
+    BBM4CrossUp := true
+
+else
+    BBM1CrossUp := false
+    BBM2CrossUp := false
+    BBM3CrossUp := false
+    BBM4CrossUp := false
+
+//short
+var bool BBM1CrossDown = false //3
+var bool BBM2CrossDown = false //5
+var bool BBM3CrossDown = false //7
+var bool BBM4CrossDown = false //9
+if BBM1Price[1] > BBM5Price[1] and BBM1Price[0] < BBM5Price[0] and timeframe.period == "3"
+    BBM1CrossDown := true
+    BBM2CrossDown := false
+    BBM3CrossDown := false
+    BBM4CrossDown := false
+
+else if BBM2Price[1] > BBM5Price[1] and BBM2Price[0] < BBM5Price[0] and timeframe.period == "3"
+    BBM1CrossDown := false
+    BBM2CrossDown := true
+    BBM3CrossDown := false
+    BBM4CrossDown := false
+
+else if BBM3Price[1] > BBM5Price[1] and BBM3Price[0] < BBM5Price[0] and timeframe.period == "3"
+    BBM1CrossDown := false
+    BBM2CrossDown := false
+    BBM3CrossDown := true
+    BBM4CrossDown := false
+
+else if BBM4Price[1] > BBM5Price[1] and BBM4Price[0] < BBM5Price[0] and timeframe.period == "3"
+    BBM1CrossDown := false
+    BBM2CrossDown := false
+    BBM3CrossDown := false
+    BBM4CrossDown := true
+
+else
+    BBM1CrossDown := false
+    BBM2CrossDown := false
+    BBM3CrossDown := false
+    BBM4CrossDown := false
+
+
+//20 30
+var bool Different2030 = false
+if BBM4Price[1] > BBM4Price[0] and BBM5Price[1] < BBM5Price[0]
+    Different2030 := true
+
+else if BBM4Price[1] < BBM4Price[0] and BBM5Price[1] > BBM5Price[0]
+    Different2030 := true
+
+else
+    Different2030 := false
+
+
+// //MACD 롱 숏
+// bool macdAboveSignal = false
+// bool macdBelowSignal = false
+// if macd[0] > signal[0]
+//     macdAboveSignal := true
+//     macdBelowSignal := false
+
+// else if macd[0] < signal[0]
+//     macdAboveSignal := false
+//     macdBelowSignal := true
+
+// else 
+//     macdAboveSignal := false
+//     macdBelowSignal := false
+
+//RSI 롱 숏
+bool RSILong = false
+bool RSIShort = false
+if RSI1 > 55 and RSI2 > 55 and RSI3 > 55
+    if RSI1 > RSI2 and RSI2 > RSI3
+        RSILong := true
+        RSIShort := false
+
+
+else if RSI1 < 45 and RSI2 < 45 and RSI3 < 45
+    if RSI1 < RSI2 and RSI2< RSI3
+        RSILong := false
+        RSIShort := true
+
+else
+    RSILong := false
+    RSIShort := false
+
+
+//Stoch 롱 숏
+bool StochLong = false
+bool StochShort = false
+if SMI_smoothed[0] > emasignal[0]
+    StochLong := true
+    StochShort := false
+
+else if SMI_smoothed[0] < emasignal[0]
+    StochLong := false
+    StochShort := true
+
+else
+    StochLong := false
+    StochShort := false
+
+//전완선 롱 숏
+bool ConversionUp = false
+bool conversionDown = false
+if conversionLine[1] < conversionLine[0]
+    ConversionUp := true
+    conversionDown := false
+
+else if conversionLine[1] > conversionLine[0]
+    ConversionUp := false
+    conversionDown := true
+else
+    ConversionUp := false
+    conversionDown := false
+
+//선행 1 롱 숏
+bool LeadLine1Up = false
+bool LeadLine1Down = false
+if leadLine1[1] < leadLine1[0]
+    LeadLine1Up := true
+    LeadLine1Down := false
+
+else if leadLine1[1] > leadLine1[0]
+    LeadLine1Up := false
+    LeadLine1Down := true
+
+else
+    LeadLine1Up := false
+    LeadLine1Down := false
+
+// //Long or Short
+// if ConversionUp and macdAboveSignal == true and RSILong == true and StochLong == true and LeadLine1Up == true
+//     if BBM1CrossUp == true or BBM2CrossUp == true or BBM3CrossUp == true
+//         label.new(bar_index, high, "Long", color=color.blue, textcolor=color.white, size=size.small)
+
+// else if conversionDown and macdBelowSignal == true and RSIShort == true and StochShort == true and LeadLine1Down == true
+//     if BBM1CrossDown == true or BBM2CrossDown == true or BBM3CrossDown == true
+//         label.new(bar_index, high, "Short", color=color.red, textcolor=color.white, size=size.small)
+
+var bool LongDisplay = false
+var bool ShortDisplay = false
+var label LongLabel = na
+var label ShortLabel = na
+if ConversionUp and RSILong == true and Different2030 == false
+    if BBM1CrossUp == true or BBM2CrossUp == true or BBM3CrossUp == true or BBM4CrossUp == true
+        LongLabel := label.new(bar_index, high, "FP Long", color=color.blue, textcolor=color.white, size=size.tiny)
+        LongDisplay := true
+        ShortDisplay := false
+
+else if conversionDown and RSIShort == true and Different2030 == false
+    if BBM1CrossDown == true or BBM2CrossDown == true or BBM3CrossDown == true or BBM4CrossDown == true
+        ShortLabel := label.new(bar_index, high, "FP Short", color=color.red, textcolor=color.white, size=size.tiny)
+        LongDisplay := false
+        ShortDisplay := true
+
+if LongDisplay[1] == true and close[1] < BBM2Price[1]
+    label.new(bar_index, high, "Sell", color = color.black, textcolor = color.white, size = size.tiny)
+    LongDisplay := false
+
+else if ShortDisplay[1] == true and close[1] > BBM2Price[1]
+    label.new(bar_index, high, "Sell", color = color.black, textcolor = color.white, size = size.tiny)
+    ShortDisplay := false
